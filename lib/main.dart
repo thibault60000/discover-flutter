@@ -4,61 +4,101 @@ import 'package:english_words/english_words.dart';
 
 void main() => runApp(MyApp());
 
+// My App
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: "Générateur de mots",
-      home: RandomWords()
-    );
+        title: "Générateur de mots",
+        home: RandomWords(),
+        theme: ThemeData(
+         brightness: Brightness.dark,
+         primaryColor: Colors.lightBlue[800],
+         accentColor: Colors.cyan[600],
+         textTheme: TextTheme(
+      headline: TextStyle(fontSize: 72.0, fontWeight: FontWeight.bold),
+      title: TextStyle(fontSize: 36.0, fontStyle: FontStyle.italic),
+      body1: TextStyle(fontSize: 14.0, fontFamily: 'Hind'),
+    ),
+        ));
   }
 }
 
+// Random Words State
 class RandomWordsState extends State<RandomWords> {
   final _suggestions = <WordPair>[];
   final _biggerFont = const TextStyle(fontSize: 18.0);
+  final Set<WordPair> _saved = Set<WordPair>();
 
   Widget _buildSuggestions() {
     return ListView.builder(
-      // Défini le Padding
       padding: const EdgeInsets.all(16.0),
-      // Appelé pour chaque mot suggéré
       itemBuilder: (ctx, i) {
-        // Toutes les lignes pairs, on créer un Divider
         if (i.isOdd) return Divider();
-        // Divise i en 2 et retourne le résultat en Integer, permet de calculer le nombre de mots dans la ListView
         final index = i ~/ 2;
-        // Si on arrive à la fin des mots disponibles, on en génère 10 de plus
         if (index >= _suggestions.length) {
-          _suggestions.addAll(
-              prefix0.generateWordPairs().take(10)); // peu compréhensible ..
+          _suggestions.addAll(prefix0.generateWordPairs().take(10));
         }
-        // Appelé pour chaque mot suggéré, cela va créer un widget ListTitle permettant d'afficher le mot
         return _buildRow(_suggestions[index]);
       },
     );
   }
 
+  // Build Row
   Widget _buildRow(WordPair pair) {
+    final bool alreadySaved = _saved.contains(pair);
     return ListTile(
       title: Text(
         pair.asPascalCase,
         style: _biggerFont,
       ),
+      trailing: Icon(alreadySaved ? Icons.favorite : Icons.favorite_border,
+          color: alreadySaved ? Colors.red : null),
+      onTap: () {
+        setState(() {
+          if (alreadySaved) {
+            _saved.remove(pair);
+          } else {
+            _saved.add(pair);
+          }
+        });
+      },
     );
   }
 
+  void _pushSaved() {
+    Navigator.of(context).push(
+      // Route à pousser dans le Navigator
+      MaterialPageRoute<void>(
+        builder: (BuildContext ctx) {
+          // Liste de Tiles
+          final Iterable<ListTile> tiles = _saved.map((WordPair pair) {
+            return ListTile(title: Text(pair.asPascalCase, style: _biggerFont));
+          });
+          // Liste Divided
+          final List<Widget> divided =
+              ListTile.divideTiles(context: ctx, tiles: tiles).toList();
+          // Scaffold
+          return Scaffold(
+              appBar: AppBar(title: Text('Noms Favoris')),
+              body: ListView(children: divided));
+        },
+      ),
+    );
+  }
+
+  // Build
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Générateur de mots'),
-      ),
-      body: _buildSuggestions()
-    );
+        appBar: AppBar(title: Text('Générateur de mots'), actions: <Widget>[
+          IconButton(icon: Icon(Icons.list), onPressed: _pushSaved)
+        ]),
+        body: _buildSuggestions());
   }
 }
 
+// Random Words
 class RandomWords extends StatefulWidget {
   @override
   RandomWordsState createState() => RandomWordsState();
